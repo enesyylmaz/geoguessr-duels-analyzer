@@ -1,0 +1,47 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+/dist/
+
+# History or IDE-related files
+.history/
+.dist/
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# npm debug logs
+npm-debug.log*
+
+# Yarn integrity file
+.yarn-integrity
+
+# VS Code settings
+.vscode/
+
+# IntelliJ IDEA settings
+.idea/
+
+# MacOS-specific files
+.AppleDouble
+.LSOverride
+
+# Windows-specific files
+ehthumbs.db
+Desktop.ini
+
+# Other potential unwanted files/folders
+*.bak
+*.swp
+*.tmp
+.vercel
