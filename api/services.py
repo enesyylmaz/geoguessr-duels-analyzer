@@ -2,7 +2,8 @@ import requests
 import json
 from typing import List, Dict, Optional, Any
 from concurrent.futures import ThreadPoolExecutor
-from .constants import country_codes, app_state
+from .constants import country_codes
+from .session_manager import session_manager
 
 def get_user_id(auth_token: str) -> Optional[str]:
     base_url = "https://www.geoguessr.com/api/v3/profiles"
@@ -19,9 +20,14 @@ def get_user_id(auth_token: str) -> Optional[str]:
     except:
         return None
 
-def fetch_all_duel_ids(auth_token: str) -> List[str]:
-    app_state.progress["status"] = "fetching_duel_ids"
-    app_state.progress["message"] = "Starting to fetch duel IDs..."
+def fetch_all_duel_ids(session_id: str, auth_token: str) -> List[str]:
+    session = session_manager.get_session(session_id)
+    if not session:
+        return []
+        
+    session.progress["status"] = "fetching_duel_ids"
+    session.progress["message"] = "Starting to fetch duel IDs..."
+    session_manager.update_session(session_id, progress=session.progress)
     
     base_url = "https://www.geoguessr.com/api/v4/feed/private"
     headers = {
@@ -43,7 +49,8 @@ def fetch_all_duel_ids(auth_token: str) -> List[str]:
             data = response.json()
 
             page_count += 1
-            app_state.progress["message"] = f"Processing page {page_count}..."
+            session.progress["message"] = f"Processing page {page_count}..."
+            session_manager.update_session(session_id, progress=session.progress)
             
             duel_ids_from_page = extract_duel_ids(data)
             all_duel_ids.extend(duel_ids_from_page)
@@ -51,11 +58,13 @@ def fetch_all_duel_ids(auth_token: str) -> List[str]:
             if "paginationToken" in data and data["paginationToken"]:
                 pagination_token = data["paginationToken"]
             else:
-                app_state.progress["message"] = f"Found {len(all_duel_ids)} total duel IDs across {page_count} pages"
+                session.progress["message"] = f"Found {len(all_duel_ids)} total duel IDs across {page_count} pages"
+                session_manager.update_session(session_id, progress=session.progress)
                 break
 
         except requests.exceptions.RequestException as e:
-            app_state.progress["message"] = f"Error fetching data: {e}"
+            session.progress["message"] = f"Error fetching data: {e}"
+            session_manager.update_session(session_id, progress=session.progress)
             break
 
     return all_duel_ids
@@ -93,8 +102,12 @@ def extract_duel_ids(feed_data: Dict[str, Any]) -> List[str]:
 
     return duel_ids
 
-def fetch_duel_threaded(duel_id, auth_token):
+def fetch_duel_threaded(duel_id, auth_token, session_id):
     import time
+    
+    session = session_manager.get_session(session_id)
+    if not session:
+        return {"duel_id": duel_id, "error": "Session expired or not found"}
     
     base_url = "https://game-server.geoguessr.com/api/duels"
     url = f"{base_url}/{duel_id}"
@@ -113,7 +126,8 @@ def fetch_duel_threaded(duel_id, auth_token):
             response = requests.get(url, headers=headers)
             
             if response.status_code == 200 or attempt == max_retries - 1:
-                app_state.progress["current"] += 1
+                session.progress["current"] += 1
+                session_manager.update_session(session_id, progress=session.progress)
             
             if response.status_code == 200:
                 return response.json()
@@ -127,37 +141,50 @@ def fetch_duel_threaded(duel_id, auth_token):
                 return {"duel_id": duel_id, "error": f"Status code: {response.status_code}"}
         except Exception as e:
             if attempt == max_retries - 1:
-                app_state.progress["current"] += 1
+                session.progress["current"] += 1
+                session_manager.update_session(session_id, progress=session.progress)
                 return {"duel_id": duel_id, "error": str(e)}
     
-    app_state.progress["current"] += 1
+    session.progress["current"] += 1
+    session_manager.update_session(session_id, progress=session.progress)
     return {"duel_id": duel_id, "error": "Maximum retries exceeded"}
 
-def fetch_all_duels_threaded(duel_ids, auth_token, max_workers=15):
+def fetch_all_duels_threaded(session_id, duel_ids, auth_token, max_workers=15):
     results = []
-    app_state.progress["current"] = 0
-    app_state.progress["total"] = len(duel_ids)
-    app_state.progress["status"] = "fetching_duels"
-    app_state.progress["message"] = "Fetching duel data..."
+    session = session_manager.get_session(session_id)
+    if not session:
+        return []
+        
+    session.progress["current"] = 0
+    session.progress["total"] = len(duel_ids)
+    session.progress["status"] = "fetching_duels"
+    session.progress["message"] = "Fetching duel data..."
+    session_manager.update_session(session_id, progress=session.progress)
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(fetch_duel_threaded, duel_id, auth_token) for duel_id in duel_ids]
+        futures = [executor.submit(fetch_duel_threaded, duel_id, auth_token, session_id) for duel_id in duel_ids]
 
         for future in futures:
             results.append(future.result())
 
     return results
 
-def analyze_geoguessr_duels(duel_data, user_id, country_codes):
-    app_state.progress["current"] = 0
-    app_state.progress["total"] = len(duel_data)
-    app_state.progress["status"] = "analyzing"
-    app_state.progress["message"] = "Analyzing duel data..."
+def analyze_geoguessr_duels(session_id, duel_data, user_id):
+    session = session_manager.get_session(session_id)
+    if not session:
+        return []
+        
+    session.progress["current"] = 0
+    session.progress["total"] = len(duel_data)
+    session.progress["status"] = "analyzing"
+    session.progress["message"] = "Analyzing duel data..."
+    session_manager.update_session(session_id, progress=session.progress)
     
     country_dict = {}
 
     for data in duel_data:
-        app_state.progress["current"] += 1
+        session.progress["current"] += 1
+        session_manager.update_session(session_id, progress=session.progress)
         
         if not isinstance(data, dict) or "rounds" not in data:
             continue
@@ -213,37 +240,48 @@ def analyze_geoguessr_duels(duel_data, user_id, country_codes):
                 "totalDistance": data["distance"]
             })
             
-            
     final_data.sort(key=lambda x: x["count"], reverse=True)
     
-    app_state.progress["status"] = "complete"
-    app_state.progress["message"] = "Analysis complete!"
+    session.progress["status"] = "complete"
+    session.progress["message"] = "Analysis complete!"
+    session_manager.update_session(session_id, progress=session.progress, results=final_data)
     
     return final_data
 
-def process_geoguessr_data(auth_token):
-    app_state.progress["status"] = "starting"
-    app_state.progress["message"] = "Starting data processing..."
+def process_geoguessr_data(session_id, auth_token):
+    session = session_manager.get_session(session_id)
+    if not session:
+        return None
+        
+    session.progress["status"] = "starting"
+    session.progress["message"] = "Starting data processing..."
+    session_manager.update_session(session_id, progress=session.progress)
     
     try:
         user_id = get_user_id(auth_token)
         if not user_id:
-            app_state.progress["status"] = "error"
-            app_state.progress["message"] = "Failed to get user ID"
+            session.progress["status"] = "error"
+            session.progress["message"] = "Failed to get user ID"
+            session_manager.update_session(session_id, progress=session.progress)
             return None
             
-        duel_ids = fetch_all_duel_ids(auth_token)
+        session_manager.update_session(session_id, user_id=user_id)
+            
+        duel_ids = fetch_all_duel_ids(session_id, auth_token)
         if not duel_ids:
-            app_state.progress["status"] = "error"
-            app_state.progress["message"] = "No duel IDs found"
+            session.progress["status"] = "error"
+            session.progress["message"] = "No duel IDs found"
+            session_manager.update_session(session_id, progress=session.progress)
             return None
             
-        duel_data = fetch_all_duels_threaded(duel_ids, auth_token, max_workers=15)
-        result = analyze_geoguessr_duels(duel_data, user_id, country_codes)
+        duel_data = fetch_all_duels_threaded(session_id, duel_ids, auth_token, max_workers=15)
+        result = analyze_geoguessr_duels(session_id, duel_data, user_id)
 
-        app_state.analysis_results = result
         return result
     except Exception as e:
-        app_state.progress["status"] = "error"
-        app_state.progress["message"] = f"Error: {str(e)}"
+        session = session_manager.get_session(session_id)
+        if session:
+            session.progress["status"] = "error"
+            session.progress["message"] = f"Error: {str(e)}"
+            session_manager.update_session(session_id, progress=session.progress)
         return None

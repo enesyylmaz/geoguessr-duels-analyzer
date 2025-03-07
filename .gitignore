@@ -45,3 +45,8 @@ Desktop.ini
 *.swp
 *.tmp
 .vercel
+
+__pycache__/
+*.pyc
+*.pyo
+

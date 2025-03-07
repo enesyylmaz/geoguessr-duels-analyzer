@@ -5,6 +5,7 @@ const GeoguessrDuelsAnalyzer = () => {
   const [authToken, setAuthToken] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
+  const [sessionId, setSessionId] = useState('');
   const [progress, setProgress] = useState({
     current: 0,
     total: 0,
@@ -14,21 +15,88 @@ const GeoguessrDuelsAnalyzer = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const storedSessionId = localStorage.getItem('geoguessrSessionId');
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+      checkSession(storedSessionId);
+    } else {
+      createNewSession();
+    }
+  }, []);
+
+  useEffect(() => {
     let intervalId;
     
-    if (isAnalyzing) {
-      intervalId = setInterval(checkProgress, 2000);
+    if (isAnalyzing && sessionId) {
+      intervalId = setInterval(() => checkProgress(sessionId), 2000);
     }
     
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isAnalyzing]);
+  }, [isAnalyzing, sessionId]);
+
+  const createNewSession = async () => {
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+      
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      localStorage.setItem('geoguessrSessionId', data.sessionId);
+    } catch (err) {
+      setError('Failed to create session: ' + err.message);
+    }
+  };
+
+  const checkSession = async (sid) => {
+    try {
+      const response = await fetch(`/api/progress?sessionId=${sid}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          localStorage.removeItem('geoguessrSessionId');
+          createNewSession();
+          return;
+        }
+        throw new Error('Failed to check session');
+      }
+      
+      const data = await response.json();
+      setProgress(data);
+      
+      if (data.status === 'analyzing' || data.status === 'fetching_duels' || 
+          data.status === 'fetching_duel_ids' || data.status === 'starting') {
+        setIsAnalyzing(true);
+      } else if (data.status === 'complete') {
+        setIsAnalyzing(false);
+        fetchResults(sid);
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
   
   const startAnalysis = async () => {
     if (!authToken) {
       setError('Auth token is required');
       return;
+    }
+    
+    if (!sessionId) {
+      await createNewSession();
     }
     
     setIsAnalyzing(true);
@@ -42,7 +110,10 @@ const GeoguessrDuelsAnalyzer = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ authToken }),
+        body: JSON.stringify({ 
+          authToken,
+          sessionId
+        }),
         credentials: 'include'
       });
       
@@ -50,15 +121,23 @@ const GeoguessrDuelsAnalyzer = () => {
         const data = await response.json();
         throw new Error(data.error || 'Failed to start analysis');
       }
+      
+      const data = await response.json();
+      if (data.sessionId && data.sessionId !== sessionId) {
+        setSessionId(data.sessionId);
+        localStorage.setItem('geoguessrSessionId', data.sessionId);
+      }
     } catch (err) {
       setError(err.message);
       setIsAnalyzing(false);
     }
   };
 
-  const checkProgress = async () => {
+  const checkProgress = async (sid) => {
     try {
-      const response = await fetch(`/api/progress`);
+      const response = await fetch(`/api/progress?sessionId=${sid}`, {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch progress');
@@ -68,7 +147,7 @@ const GeoguessrDuelsAnalyzer = () => {
       setProgress(data);
       
       if (data.status === 'complete') {
-        fetchResults();
+        fetchResults(sid);
       } else if (data.status === 'error') {
         setError(data.message);
         setIsAnalyzing(false);
@@ -78,9 +157,11 @@ const GeoguessrDuelsAnalyzer = () => {
     }
   };
 
-  const fetchResults = async () => {
+  const fetchResults = async (sid) => {
     try {
-      const response = await fetch(`/api/results?authToken=${encodeURIComponent(authToken)}`);
+      const response = await fetch(`/api/results?sessionId=${sid}`, {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch results');
@@ -222,15 +303,17 @@ const GeoguessrDuelsAnalyzer = () => {
           />
         </div>
         
-        <button
-          onClick={startAnalysis}
-          disabled={isAnalyzing || !authToken}
-          className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded
-            ${(isAnalyzing || !authToken) ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
-        >
-          {isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
-        </button>
+        <div className="flex justify-between">
+          <button
+            onClick={startAnalysis}
+            disabled={isAnalyzing || !authToken}
+            className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded
+              ${(isAnalyzing || !authToken) ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+          >
+            {isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
+          </button>
+        </div>
       </div>
       
       {error && (
