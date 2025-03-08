@@ -248,7 +248,7 @@ const GeoguessrDuelsAnalyzer = () => {
   const renderResults = () => {
     if (!results || results.length === 0) return null;
     
-    const topCountries = results.slice(0, 10);
+    //const topCountries = results.slice(0, 10);
     
     return (
       <div className="mt-8">
