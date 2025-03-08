@@ -15,18 +15,15 @@ def handle_options(path):
 @app.route('/api/session', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def create_user_session():
-    """Create a new session for a user"""
     session_id = session_manager.create_session()
     response = make_response(jsonify({"sessionId": session_id}))
-
-    response.set_cookie('session_id', session_id, httponly=True, samesite='Lax', max_age=3600)
+    response.set_cookie('session_id', session_id, httponly=True, samesite='Lax', max_age=3600, secure=True)
     
     return response
 
 @app.route('/api/progress')
 @cross_origin(supports_credentials=True)
 def get_progress():
-    """Get the progress of analysis for a session"""
     session_id = request.cookies.get('session_id')
     
     if not session_id:
@@ -44,7 +41,6 @@ def get_progress():
 @app.route('/api/analyze', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def analyze():
-    """Start analysis for a user session"""
     data = request.json
     auth_token = data.get('authToken')
     
@@ -75,14 +71,13 @@ def analyze():
         "sessionId": session_id
     }))
     
-    response.set_cookie('session_id', session_id, httponly=True, samesite='Lax', max_age=3600)
+    response.set_cookie('session_id', session_id, httponly=True, samesite='Lax', max_age=3600, secure=True)
     
     return response
 
 @app.route('/api/results')
 @cross_origin(supports_credentials=True)
 def get_results():
-    """Get analysis results for a session"""
     session_id = request.cookies.get('session_id')
     
     if not session_id:
@@ -109,7 +104,6 @@ def get_results():
 @app.route('/api/session', methods=['DELETE'])
 @cross_origin(supports_credentials=True)
 def end_session():
-    """End a user session and clean up resources"""
     session_id = request.cookies.get('session_id')
     if not session_id:
         session_id = request.args.get('sessionId')
@@ -129,3 +123,16 @@ def end_session():
 @app.route("/<path:path>")
 def serve_react(path):
     return send_from_directory(app.static_folder, "index.html")
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    if request.path == '/api/analyze':
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    
+    return response

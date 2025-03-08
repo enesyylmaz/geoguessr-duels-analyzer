@@ -140,7 +140,7 @@ const GeoguessrDuelsAnalyzer = () => {
 
   const startAnalysis = async () => {
     if (!authToken) {
-      setError('Auth token is required');
+      setError('_ncfa cookie is required');
       return;
     }
     
@@ -165,6 +165,8 @@ const GeoguessrDuelsAnalyzer = () => {
         }),
         credentials: 'include'
       });
+
+      setAuthToken('');
       
       if (!response.ok) {
         const data = await response.json();
@@ -291,7 +293,7 @@ const GeoguessrDuelsAnalyzer = () => {
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <div className="mb-4">
           <Label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="auth-token">
-            Auth Token 
+            _ncfa Cookie
             <span className="text-xs font-normal ml-2 text-gray-500">
               (from your _ncfa cookie on geoguessr.com)
             </span>
@@ -299,7 +301,7 @@ const GeoguessrDuelsAnalyzer = () => {
           <Input
             id="auth-token"
             type="text"
-            placeholder="Enter your auth token"
+            placeholder="Enter your _ncfa cookie"
             className="w-full p-2 border border-gray-300 rounded"
             value={authToken}
             onChange={(e) => setAuthToken(e.target.value)}
@@ -314,6 +316,9 @@ const GeoguessrDuelsAnalyzer = () => {
             {isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
           </Button>
         </div>
+        <Label className="text-xs text-gray-500 mt-3">
+        Your _ncfa cookie is only used for API requests and is never stored permanently. This cookie provides access to your GeoGuessr account, so never share it with anyone else.
+            </Label>
       </div>
       
       {error && (

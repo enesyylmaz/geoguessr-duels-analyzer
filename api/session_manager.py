@@ -28,14 +28,12 @@ class SessionManager:
         self.cleanup_thread.start()
     
     def create_session(self, user_id: str = None) -> str:
-        """Create a new session and return the session ID"""
         with self.lock:
             session = UserSession(user_id)
             self.sessions[session.session_id] = session
             return session.session_id
     
     def get_session(self, session_id: str) -> Optional[UserSession]:
-        """Get a session by ID and update its last accessed time"""
         with self.lock:
             session = self.sessions.get(session_id)
             if session:
@@ -43,7 +41,6 @@ class SessionManager:
             return session
     
     def update_session(self, session_id: str, progress=None, results=None, user_id=None) -> bool:
-        """Update a session's progress or results"""
         with self.lock:
             session = self.sessions.get(session_id)
             if not session:
@@ -62,7 +59,6 @@ class SessionManager:
             return True
     
     def delete_session(self, session_id: str) -> bool:
-        """Delete a session by ID"""
         with self.lock:
             if session_id in self.sessions:
                 del self.sessions[session_id]
@@ -70,7 +66,6 @@ class SessionManager:
             return False
     
     def _cleanup_expired_sessions(self):
-        """Periodically clean up expired sessions"""
         while True:
             time.sleep(60)
             current_time = time.time()

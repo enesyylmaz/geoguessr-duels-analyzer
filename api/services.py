@@ -63,7 +63,7 @@ def fetch_all_duel_ids(session_id: str, auth_token: str) -> List[str]:
                 break
 
         except requests.exceptions.RequestException as e:
-            session.progress["message"] = f"Error fetching data: {e}"
+            session.progress["message"] = f"Error fetching data: {str(e).split('auth_token')[0]}"
             session_manager.update_session(session_id, progress=session.progress)
             break
 
@@ -97,7 +97,7 @@ def extract_duel_ids(feed_data: Dict[str, Any]) -> List[str]:
                                     duel_ids.append(game_id)
                     except json.JSONDecodeError:
                         continue
-                except Exception as e:
+                except Exception:
                     continue
 
     return duel_ids
@@ -143,7 +143,7 @@ def fetch_duel_threaded(duel_id, auth_token, session_id):
             if attempt == max_retries - 1:
                 session.progress["current"] += 1
                 session_manager.update_session(session_id, progress=session.progress)
-                return {"duel_id": duel_id, "error": str(e)}
+                return {"duel_id": duel_id, "error": str(e).split('auth_token')[0]}
     
     session.progress["current"] += 1
     session_manager.update_session(session_id, progress=session.progress)
@@ -277,11 +277,19 @@ def process_geoguessr_data(session_id, auth_token):
         duel_data = fetch_all_duels_threaded(session_id, duel_ids, auth_token, max_workers=15)
         result = analyze_geoguessr_duels(session_id, duel_data, user_id)
 
+        auth_token = None
+        
         return result
     except Exception as e:
         session = session_manager.get_session(session_id)
         if session:
+            error_message = str(e)
+            if 'auth_token' in error_message:
+                error_message = error_message.split('auth_token')[0] + '...'
+                
             session.progress["status"] = "error"
-            session.progress["message"] = f"Error: {str(e)}"
+            session.progress["message"] = f"Error: {error_message}"
             session_manager.update_session(session_id, progress=session.progress)
+        
+        auth_token = None
         return None
