@@ -3,6 +3,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
+import { ArrowUpDown } from 'lucide-react';
+
 
 const GeoguessrDuelsAnalyzer = () => {
   const [authToken, setAuthToken] = useState('');
@@ -15,7 +17,41 @@ const GeoguessrDuelsAnalyzer = () => {
     status: 'idle',
     message: ''
   });
+  const [sortConfig, setSortConfig] = useState({
+    key: 'count',
+    direction: 'descending'
+  });
   const [error, setError] = useState(null);
+
+  const sortedResults = React.useMemo(() => {
+    if (!results) return [];
+
+    return [...results].sort((a, b) => {
+      let modifier = sortConfig.direction === 'ascending' ? 1 : -1;
+      
+      switch(sortConfig.key) {
+        case 'countryName':
+          return modifier * a.countryName.localeCompare(b.countryName);
+        case 'count':
+          return modifier * (a.count - b.count);
+        case 'avgScore':
+          return modifier * (a.avgScore - b.avgScore);
+        case 'avgDistance':
+          return modifier * (a.avgDistance - b.avgDistance);
+        default:
+          return 0;
+      }
+    });
+  }, [results, sortConfig]);
+
+  const handleSort = (key) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'descending' 
+        ? 'ascending' 
+        : 'descending'
+    }));
+  };
 
   const checkSession = useCallback(async (sid) => {
     try {
@@ -216,8 +252,8 @@ const GeoguessrDuelsAnalyzer = () => {
     
     return (
       <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Results by Country</h2>
         
+        {/*
         <div className="h-80 w-full mb-8">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -239,27 +275,44 @@ const GeoguessrDuelsAnalyzer = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        */}
         
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('countryName')}>
+                <div className="flex items-center">
                   Country
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                </div>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('count')}>
+                <div className="flex items-center">
                   Rounds
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                </div>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('avgScore')}>
+                <div className="flex items-center">
                   Avg. Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                </div>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('avgDistance')}>
+                <div className="flex items-center">
                   Avg. Distance (km)
-                </th>
+                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                </div>
+              </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {results.map((country) => (
+              {sortedResults.map((country) => (
                 <tr key={country.countryCode}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -288,8 +341,6 @@ const GeoguessrDuelsAnalyzer = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">GeoGuessr Duels Analyzer</h1>
-      
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <div className="mb-4">
           <Label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="auth-token">

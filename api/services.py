@@ -121,7 +121,7 @@ def fetch_duel_threaded(duel_id, auth_token, session_id):
     
     for attempt in range(max_retries):
         try:
-            time.sleep(0.2)
+            time.sleep(0.1)
             
             response = requests.get(url, headers=headers)
             
