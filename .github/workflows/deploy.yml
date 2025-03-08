@@ -19,6 +19,10 @@ jobs:
           cache: "npm"
           cache-dependency-path: geoguessr_analyzer/package-lock.json
 
+      - name: Install dependencies
+        working-directory: ./geoguessr_analyzer
+        run: npm install
+
       - name: Build frontend
         working-directory: ./geoguessr_analyzer
         run: npm run build
