@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { ArrowUpDown } from 'lucide-react';
-
+import WorldMap from './WorldMap';
 
 const GeoguessrDuelsAnalyzer = () => {
   const [authToken, setAuthToken] = useState('');
@@ -228,10 +227,10 @@ const GeoguessrDuelsAnalyzer = () => {
     return (
       <div className="w-full mt-4">
         <div className="flex justify-between mb-1">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-300 text-bold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
             {progress.message}
           </span>
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-300 text-bold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
             {progress.current} / {progress.total}
           </span>
         </div>
@@ -246,102 +245,75 @@ const GeoguessrDuelsAnalyzer = () => {
   };
 
   const renderResults = () => {
-    if (!results || results.length === 0) return null;
-    
-    //const topCountries = results.slice(0, 10);
-    
+    if (!results || results.length === 0) return null; 
     return (
-      <div className="mt-8">
-        
-        {/*
-        <div className="h-80 w-full mb-8">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={topCountries}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="countryName" 
-                angle={-45} 
-                textAnchor="end"
-                height={60}
-              />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" name="Number of Rounds" fill="#3b82f6" />
-              <Bar dataKey="avgScore" name="Avg. Score" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        */}
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('countryName')}>
-                <div className="flex items-center">
-                  Country
-                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('count')}>
-                <div className="flex items-center">
-                  Rounds
-                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('avgScore')}>
-                <div className="flex items-center">
-                  Avg. Score
-                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
-                </div>
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('avgDistance')}>
-                <div className="flex items-center">
-                  Avg. Distance (km)
-                  <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
-                </div>
-              </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedResults.map((country) => (
-                <tr key={country.countryCode}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-900">
-                        {country.countryName}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">{country.count}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">{country.avgScore.toFixed(1)}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">{(country.avgDistance / 1000).toFixed(1)}</span>
-                  </td>
+      <div>
+        <WorldMap results={results} />
+          <div className="overflow-x-auto rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('countryName')}>
+                  <div className="flex items-center">
+                    Country
+                    <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('count')}>
+                  <div className="flex items-center">
+                    Rounds
+                    <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('avgScore')}>
+                  <div className="flex items-center">
+                    Avg. Score
+                    <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('avgDistance')}>
+                  <div className="flex items-center">
+                    Avg. Distance (km)
+                    <ArrowUpDown className="ml-1 h-4 w-4 opacity-50" />
+                  </div>
+                </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedResults.map((country) => (
+                  <tr key={country.countryCode}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {country.countryName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">{country.count}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">{country.avgScore.toFixed(1)}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900">{(country.avgDistance / 1000).toFixed(1)}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
       </div>
     );
   };
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+      <div className="bg-white shadow-md rounded-lg p-6 mb-4">
         <div className="mb-4">
           <Label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="auth-token">
             _ncfa Cookie
@@ -368,8 +340,13 @@ const GeoguessrDuelsAnalyzer = () => {
           </Button>
         </div>
         <Label className="text-xs text-gray-500 mt-3">
-        Your _ncfa cookie is only used for API requests and is never stored permanently. This cookie provides access to your GeoGuessr account, so never share it with anyone else.
-            </Label>
+          <span className="text-bold text-2xl text-gray-900">
+            !
+          </span>
+          <span>
+          The _ncfa cookie is used solely for API requests to fetch duel IDs and duel data. It is not stored. It grants access to your GeoGuessr account, so never share it with anyone.
+          </span>
+        </Label>
       </div>
       
       {error && (
