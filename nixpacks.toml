@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs", "python310", "python310Packages.virtualenv"]
+
+[phases.install]
+cmds = [
+  "python -m venv venv",
+  "source venv/bin/activate && pip install --no-cache-dir -r requirements.txt",
+  "cd geoguessr_analyzer && npm install"
+]
+
+[phases.build]
+cmds = [
+  "cd geoguessr_analyzer && npm run build"
+]
+
+[start]
+cmd = "source venv/bin/activate && gunicorn api.index:app"

@@ -13,3 +13,10 @@ itsdangerous==2.2.0
 Jinja2==3.1.5
 MarkupSafe==3.0.2
 urllib3==2.3.0
+structlog==23.3.0
+sentry-sdk==1.39.2
+psutil==5.9.7
+locust==2.21.0
+pytest==7.4.4
+pytest-cov==4.1.0
+gunicorn==21.2.0
