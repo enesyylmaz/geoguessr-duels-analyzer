@@ -108,7 +108,7 @@ const GeoguessrDuelsAnalyzer = () => {
 
   const createNewSession = async () => {
     try {
-      const response = await fetch('/api/session', {
+      const response = await fetch('/api/newsession', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

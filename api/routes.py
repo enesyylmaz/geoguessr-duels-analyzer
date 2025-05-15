@@ -12,7 +12,7 @@ def handle_options(path):
     response = app.make_default_options_response()
     return response
 
-@app.route('/api/session', methods=['POST'])
+@app.route('/api/newsession', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def create_user_session():
     session_id = session_manager.create_session()
@@ -101,7 +101,7 @@ def get_results():
             "message": session.progress["message"]
         })
 
-@app.route('/api/session', methods=['DELETE'])
+@app.route('/api/newsession', methods=['DELETE'])
 @cross_origin(supports_credentials=True)
 def end_session():
     session_id = request.cookies.get('session_id')
